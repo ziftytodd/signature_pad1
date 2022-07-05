@@ -1,8 +1,9 @@
 node_modules/
-dist/
+# dist/
 coverage/
 tmp/
 yarn-error.log
+.idea
 
 .pnp.*
 .yarn/*

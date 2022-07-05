@@ -38,6 +38,7 @@ export interface Options extends Partial<PointGroupOptions> {
   velocityFilterWeight?: number;
   backgroundColor?: string;
   throttle?: number;
+  android?: boolean;
 }
 
 export interface PointGroup extends PointGroupOptions {
@@ -65,6 +66,8 @@ export default class SignaturePad extends SignatureEventTarget {
   private _lastVelocity: number;
   private _lastWidth: number;
   private _strokeMoveUpdate: (event: SignatureEvent) => void;
+  private _isAndroid: boolean;
+  private _updatingInterval: any;
   /* tslint:enable: variable-name */
 
   constructor(private canvas: HTMLCanvasElement, options: Options = {}) {
@@ -79,6 +82,7 @@ export default class SignaturePad extends SignatureEventTarget {
     this.dotSize = options.dotSize || 0;
     this.penColor = options.penColor || 'black';
     this.backgroundColor = options.backgroundColor || 'rgba(0,0,0,0)';
+    this._isAndroid = options.android || false;
 
     this._strokeMoveUpdate = this.throttle
       ? throttle(SignaturePad.prototype._strokeUpdate, this.throttle)
@@ -298,6 +302,12 @@ export default class SignaturePad extends SignatureEventTarget {
     this._data.push(newPointGroup);
     this._reset();
     this._strokeUpdate(event);
+
+    if ((this._updatingInterval === undefined) && this._isAndroid) {
+      this._updatingInterval = setInterval(() => {
+        this.canvas.style.overflow = (this.canvas.style.overflow === 'visible') ? 'hidden' : 'visible';
+      }, 50);
+    }
   }
 
   private _strokeUpdate(event: SignatureEvent): void {
@@ -366,6 +376,12 @@ export default class SignaturePad extends SignatureEventTarget {
     this._strokeUpdate(event);
 
     this.dispatchEvent(new CustomEvent('endStroke', { detail: event }));
+
+    if (this._updatingInterval !== undefined) {
+      clearInterval(this._updatingInterval);
+      delete this._updatingInterval;
+      this.canvas.style.overflow = (this.canvas.style.overflow === 'visible') ? 'hidden' : 'visible';
+    }
   }
 
   private _handlePointerEvents(): void {
